@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rocket Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    #gameArea {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    #rocket {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      width: 50px;
+      height: 80px;
+      background-color: red;
+      border-radius: 10px;
+      transform: translateX(-50%);
+    }
+
+    .projectile {
+      position: absolute;
+      width: 6px;
+      height: 20px;
+      background-color: yellow;
+      border-radius: 2px;
+    }
+
+    .falling-object {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background-color: cyan;
+      border-radius: 50%;
+    }
+
+    #scoreBoard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 24px;
+      font-family: sans-serif;
+      z-index: 10;
+    }
+
+    .control-button {
+      position: absolute;
+      bottom: 10px;
+      width: 60px;
+      height: 60px;
+      background-color: rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 30px;
+      border: none;
+      border-radius: 30px;
+      z-index: 20;
+      user-select: none;
+    }
+
+    #leftBtn {
+      left: 10px;
+    }
+
+    #rightBtn {
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div id="rocket"></div>
+    <div id="scoreBoard">Score: 0</div>
+    <button id="leftBtn" class="control-button">&#8592;</button>
+    <button id="rightBtn" class="control-button">&#8594;</button>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById('gameArea');
+    const rocket = document.getElementById('rocket');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+
+    let left = window.innerWidth / 2 - 25;
+    const rocketWidth = 50;
+    const rocketBottom = 20;
+    const moveSpeed = 5;
+    const keys = {};
+    let score = 0;
+
+    const projectiles = [];
+    const fallingObjects = [];
+
+    // Keyboard control
+    document.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+      if (e.key === ' ') fireProjectile();
+    });
+
+    document.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
+
+    // Touch controls
+    leftBtn.addEventListener('touchstart', () => keys['ArrowLeft'] = true);
+    leftBtn.addEventListener('touchend', () => keys['ArrowLeft'] = false);
+
+    rightBtn.addEventListener('touchstart', () => keys['ArrowRight'] = true);
+    rightBtn.addEventListener('touchend', () => keys['ArrowRight'] = false);
+
+    function updateRocketPosition() {
+      if (keys['ArrowLeft']) {
+        left = Math.max(rocketWidth, left - moveSpeed);
+      }
+      if (keys['ArrowRight']) {
+        left = Math.min(window.innerWidth - rocketWidth, left + moveSpeed);
+      }
+      rocket.style.left = `${left}px`;
+    }
+
+    function fireProjectile() {
+      const projectile = document.createElement('div');
+      projectile.classList.add('projectile');
+      const projectileLeft = left;
+      let bottom = rocketBottom + 80;
+
+      projectile.style.left = `${projectileLeft}px`;
+      projectile.style.bottom = `${bottom}px`;
+      gameArea.appendChild(projectile);
+      projectiles.push({ element: projectile, bottom });
+
+      projectile.interval = setInterval(() => {
+        bottom += 10;
+        if (bottom > window.innerHeight) {
+          clearInterval(projectile.interval);
+          projectile.remove();
+          projectiles.splice(projectiles.findIndex(p => p.element === projectile), 1);
+        } else {
+          projectile.style.bottom = `${bottom}px`;
+          projectile.bottom = bottom;
+        }
+      }, 16);
+    }
+
+    function spawnFallingObject() {
+      const object = document.createElement('div');
+      object.classList.add('falling-object');
+
+      const objectLeft = Math.floor(Math.random() * (window.innerWidth - 40));
+      let top = 0;
+
+      object.style.left = `${objectLeft}px`;
+      object.style.top = `${top}px`;
+      gameArea.appendChild(object);
+
+      const fallingObj = { element: object, top, left: objectLeft };
+      fallingObjects.push(fallingObj);
+
+      object.interval = setInterval(() => {
+        top += 4;
+        if (top > window.innerHeight) {
+          clearInterval(object.interval);
+          object.remove();
+          fallingObjects.splice(fallingObjects.indexOf(fallingObj), 1);
+        } else {
+          object.style.top = `${top}px`;
+          fallingObj.top = top;
+        }
+      }, 16);
+    }
+
+    function checkCollisions() {
+      for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const obj = fallingObjects[i];
+        const objRect = obj.element.getBoundingClientRect();
+
+        for (let j = projectiles.length - 1; j >= 0; j--) {
+          const proj = projectiles[j];
+          const projRect = proj.element.getBoundingClientRect();
+
+          const isHit = !(
+            projRect.bottom < objRect.top ||
+            projRect.top > objRect.bottom ||
+            projRect.right < objRect.left ||
+            projRect.left > objRect.right
+          );
+
+          if (isHit) {
+            clearInterval(obj.element.interval);
+            clearInterval(proj.element.interval);
+            obj.element.remove();
+            proj.element.remove();
+            fallingObjects.splice(i, 1);
+            projectiles.splice(j, 1);
+            score += 1;
+            scoreBoard.textContent = `Score: ${score}`;
+            break;
+          }
+        }
+      }
+    }
+
+    setInterval(spawnFallingObject, 1000);
+
+    function gameLoop() {
+      updateRocketPosition();
+      checkCollisions();
+      requestAnimationFrame(gameLoop);
+    }
+
+    rocket.style.left = `${left}px`;
+    gameLoop();
+
+    window.addEventListener('resize', () => {
+      left = Math.min(window.innerWidth - rocketWidth, left);
+      rocket.style.left = `${left}px`;
+    });
+  </script>
+</body>
+</html>
