@@ -26,13 +26,14 @@
 
     #rocket {
       position: absolute;
-      bottom: 20px;
+      bottom: 90px; /* lifted to stay above buttons */
       left: 50%;
       width: 50px;
       height: 80px;
       background-color: red;
       border-radius: 10px;
       transform: translateX(-50%);
+      z-index: 5;
     }
 
     .projectile {
@@ -61,9 +62,17 @@
       z-index: 10;
     }
 
-    .control-button {
+    #controls {
       position: absolute;
       bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      z-index: 20;
+    }
+
+    .control-button {
       width: 60px;
       height: 60px;
       background-color: rgba(255, 255, 255, 0.3);
@@ -71,16 +80,7 @@
       font-size: 30px;
       border: none;
       border-radius: 30px;
-      z-index: 20;
       user-select: none;
-    }
-
-    #leftBtn {
-      left: 10px;
-    }
-
-    #rightBtn {
-      right: 10px;
     }
   </style>
 </head>
@@ -88,8 +88,13 @@
   <div id="gameArea">
     <div id="rocket"></div>
     <div id="scoreBoard">Score: 0</div>
-    <button id="leftBtn" class="control-button">&#8592;</button>
-    <button id="rightBtn" class="control-button">&#8594;</button>
+
+    <!-- Mobile Controls -->
+    <div id="controls">
+      <button id="leftBtn" class="control-button">&#8592;</button>
+      <button id="fireBtn" class="control-button">&#128293;</button>
+      <button id="rightBtn" class="control-button">&#8594;</button>
+    </div>
   </div>
 
   <script>
@@ -98,10 +103,11 @@
     const scoreBoard = document.getElementById('scoreBoard');
     const leftBtn = document.getElementById('leftBtn');
     const rightBtn = document.getElementById('rightBtn');
+    const fireBtn = document.getElementById('fireBtn');
 
     let left = window.innerWidth / 2 - 25;
     const rocketWidth = 50;
-    const rocketBottom = 20;
+    const rocketBottom = 90; // updated to match lifted rocket
     const moveSpeed = 5;
     const keys = {};
     let score = 0;
@@ -125,6 +131,9 @@
 
     rightBtn.addEventListener('touchstart', () => keys['ArrowRight'] = true);
     rightBtn.addEventListener('touchend', () => keys['ArrowRight'] = false);
+
+    fireBtn.addEventListener('touchstart', fireProjectile);
+    fireBtn.addEventListener('click', fireProjectile); // also work with mouse
 
     function updateRocketPosition() {
       if (keys['ArrowLeft']) {
